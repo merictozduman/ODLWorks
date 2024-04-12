@@ -1,0 +1,68 @@
+CREATE TABLE DQEXCEPTION (
+  TDWH_OBJECTNAME        VARCHAR2(100), 
+  TDWH_ERRORCODE          VARCHAR2(100),
+  TDWH_ERRORMSG          VARCHAR2(2000),
+  TDWH_ERRORDT        TIMESTAMP
+  );
+
+ 
+ TRUNCATE TABLE "QLICK"."DQEXCEPTION"
+ 
+SELECT * FROM QLICK.DQEXCEPTION 
+ 
+TRUNCATE TABLE QLICK.MDM_CRM_EMAIL_STACK
+
+SELECT FNC_EMAIL_ISVALID('			VX') FROM dual
+
+	      INSERT INTO DQEXCEPTION (TDWH_OBJECTNAME, TDWH_ERRORCODE, TDWH_ERRORMSG, TDWH_ERRORDT)
+	      VALUES ('FNC_EMAIL_ISVALID', 'SQLCODE', 'SQLERRM', SYSTIMESTAMP)
+
+       INSERT INTO QLICK.DQEXCEPTION VALUES ('abc','abc','abc',SYSDATE);
+
+UTL_CALL_STACK.concatenate_subprogram(UTL_CALL_STACK.subprogram(i))
+
+dbms_utility.format_call_stack and dbms_utility.format_error_backtrace
+
+CREATE OR REPLACE FUNCTION FNC_EMAIL_ISVALID(
+    p_mail IN VARCHAR2
+) RETURN NUMBER
+AS
+dec_email_quality_detail_code varchar2(300);
+dec_cl_email varchar2(300);
+v_ObjectName varchar2(300);
+v_ErrorCode varchar2(300);
+v_ErrorMsg varchar2(300);
+PRAGMA AUTONOMOUS_TRANSACTION;
+ BEGIN
+
+	PRC_EMAIL_MAIN_PROCEDURE(p_mail,dec_email_quality_detail_code,dec_cl_email);
+    IF dec_email_quality_detail_code='genkal00' OR (dec_cl_email IS NOT NULL AND dec_cl_email!='') THEN
+    	RETURN 1;
+    ELSE 
+        RETURN 0;
+    END IF;
+ EXCEPTION
+   WHEN OTHERS THEN
+    v_ObjectName :=UTL_CALL_STACK.concatenate_subprogram(UTL_CALL_STACK.subprogram(1));
+    v_ErrorCode :=SQLCODE;
+    v_ErrorMsg :=SQLERRM;
+    INSERT INTO DQEXCEPTION  VALUES (v_ObjectName,v_ErrorCode, v_ErrorMsg,SYSDATE);COMMIT;
+    RAISE;
+END FNC_EMAIL_ISVALID;
+
+CREATE OR REPLACE PROCEDURE PRC_LOG_INSERT (
+P_NAME varchar2,
+P_SQLCODE varchar2,
+P_SQLERRM varchar2
+)
+AS 
+BEGIN 
+		 INSERT INTO DQEXCEPTION (TDWH_OBJECTNAME, TDWH_ERRORCODE, TDWH_ERRORMSG, TDWH_ERRORDT)
+	      VALUES (P_NAME, P_SQLCODE, P_SQLERRM, SYSTIMESTAMP);COMMIT;	PRAGMA AUTONOMOUS_TRANSACTION;
+END;
+
+
+BEGIN
+	PRC_LOG_INSERT('A','B','C');
+END;
+
